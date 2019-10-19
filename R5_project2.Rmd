@@ -1,0 +1,97 @@
+---
+title: "R5_project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#Storm Data Analysis: The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+#Data Processing
+#data loading, unzip, and read the file
+dataURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+fileZip <- "stormData.bz2"
+dirData <- "./data"
+fileCSV <- "stormData.csv"
+
+if (!file.exists(fileZip)){
+        download.file(dataURL,fileZip)
+}
+#read into R
+rawData <- read.csv("stormData.bz2", na.strings =c("","NA"), stringsAsFactors = FALSE)
+
+#work on require columns
+data <- rawData[, c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+#inspect the dataset
+dim(rawData)
+head(rawData)
+#since the quantity of the dataset is heavy, we will subset the main dataset and create the 2 separate ones for later analysis
+data1 <- rawData[rawData$PROPDMG > 0 | rawData$CROPDMG > 0,c("EVTYPE", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+data2 <- rawData[rawData$FATALITIES > 0 | rawData$INJURIES > 0,c("EVTYPE", "FATALITIES", "INJURIES")]
+
+
+```
+
+
+
+```{r}
+# Find types of events that are most harmful with respect to population health
+#The information about health losses is splited in at two columns INJURIEs and FATALITIES.
+# Calculate the most harmful events by fatalities and injuries
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+
+INJURIES_table <- aggregate(INJURIES ~ EVTYPE, data = data2, FUN =  sum)
+FATALITIES_table <- aggregate(FATALITIES ~ EVTYPE, data = data2, FUN =  sum)
+# reorder both tables starting with the highest value, and retain the 10 highest values only
+INJURIES_table <- INJURIES_table[order(-INJURIES_table$INJURIES),][1:10,]
+FATALITIES_table <- FATALITIES_table[order(-FATALITIES_table$FATALITIES),][1:10,]
+
+#plot Injuries
+injuries_plot <- ggplot(INJURIES_table, aes(x = reorder(EVTYPE, -INJURIES), y = INJURIES), fill = "tan")
+injuries_plot + geom_bar(stat = "identity", fill = "red") + labs(x = "Type of Event", y = "Total number of injuries", title = "Health Impact (Injuries) of Weather Events - US") + theme(axis.text.x = element_text(angle = 60, hjust = 1)) 
+
+#plot Fatalities
+fatalities_plot <- ggplot(FATALITIES_table, aes(x = reorder(EVTYPE, -FATALITIES), y = FATALITIES), fill = "tan") 
+fatalities_plot + geom_bar(stat = "identity", fill = "green") + labs(x = "Type of Event", y = "Total number of fatalities", title = "Health Impact (Fatalities) of Weather Events - US") + theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+
+```
+```{r}
+#Across the United States, which types of events have the greatest economic consequences?
+#prepare tables for property and crop damages
+PROPDMG_table <-aggregate(PROPDMG ~ EVTYPE, data = data1, FUN =  sum)
+CROPDMG_table <- aggregate(CROPDMG ~ EVTYPE, data = data1, FUN = sum)
+
+#reorder both tables starting with the highest value, and retain the 10 highest values only
+PROPDMG_table <-PROPDMG_table[order(-PROPDMG_table$PROPDMG),][1:10,]
+CROPDMG_table <-CROPDMG_table[order(-CROPDMG_table$CROPDMG),][1:10,]
+
+#plot the property damage and crop damage in the same one
+propdm_plot <- ggplot(PROPDMG_table, aes(x = reorder(EVTYPE, -PROPDMG), y = PROPDMG)) + 
+    geom_bar(stat = "identity", fill = "yellow") + labs(x = "Type of Event", y = "Property Damage", title = "Economic Impact (Property) \n of Weather Events - US") + 
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) 
+cropdm_plot <- ggplot(CROPDMG_table, aes(x = reorder(EVTYPE, -CROPDMG), y = CROPDMG)) + 
+    geom_bar(stat = "identity", fill = "blue") + labs(x = "Type of Event", y = "Crop Damage", title = "Economic Impact (Crop) \n of Weather Events - US") + 
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+grid.arrange(propdm_plot,cropdm_plot, ncol = 2, nrow = 1)
+
+# Conclution
+#1.the most damaging weather events to population health in the US are tornados
+#2.Regarding the economic impact,Flashflood is considered as the main factor that causes the biggest economic damage
+```
+
