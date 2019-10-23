@@ -1,0 +1,95 @@
+---
+title: "project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#simulation exercise project
+# investigate the exponential distribution in R and compare it with the centrol limit theorem
+# compare the distribution of 1000 random uniforms
+hist(runif(1000))
+
+#the distribution of 1000 averages of 40 random uniforms
+mns = NULL
+for (i in 1 : 1000) mns = c(mns, mean(runif(40)))
+hist(mns)
+
+```
+
+
+```{r}
+# run 1000 simulations, each with 40 samples of an exponential distribution, calculate the mean and variance and compare them to the theoretical estimates.
+# centrol limit therom: as the number in the sample increases or the number of simulations increase, the sample mean and variance should more acurately represent the theoretical estimate
+
+
+set.seed(100)
+lamba <- 0.2
+n <- 40
+simulations <- 1000
+
+
+sim.exp <- replicate(simulations,rexp(n,lamba))
+class(sim.exp)
+str(sim.exp)
+#it is the matrix of 40 rows and 1000 columns
+#use apply to calculate the mean of this matrix
+
+sim.exp_mean <- apply(sim.exp, 2, mean)
+class(sim.exp_mean)
+str(sim.exp_mean)
+
+#Q1
+sample_mean <- mean(sim.exp_mean)
+sample_mean
+
+theore_mean <- 1/lamba
+theore_mean
+
+#use the ggplot to compare the mean
+cum_mean <- cumsum(sim.exp_mean)/(1:simulations)
+class(cum_mean)
+g <- ggplot(data.frame(x=1:simulations, y=cum_mean), aes(x=x,y=y))+geom_hline(yintercept = theore_mean, color='red')+geom_line(size=2)
+g <- g+labs(x='simulations', y='cumulative sample mean')+ggtitle('sample means of 1000 simulations of 40 random samples')
+g
+
+#Q2
+sample_var <- var(sim.exp_mean)
+sample_var
+
+theore_var <- ((1/lamba)^2)/n
+theore_var
+
+#use the ggplot to comapre the variance 
+cum_var <- cumsum((sim.exp_mean-sample_mean)^2)/(seq_along(sim.exp_mean-1))
+g <- ggplot(data.frame(x=1:simulations, y=cum_var), aes(x=x,y=y))+geom_hline(yintercept = theore_var, color='red')+geom_line(size=2)
+g <- g+labs(x='simulations', y='cumulative sample variance')+ggtitle('sample variance of 1000 simulations of 40 random samples')
+g
+
+
+# Q3 Show that the distribution is approximately normal.
+# Use the ggplot to plot the exponential distribution and the normal distribution
+g <- ggplot(data.frame(x=sim.exp_mean), aes(x=x))+geom_histogram(aes(y=..density..),color='black',fill='white',bins=30)
+g <- g+stat_function(fun=dnorm, color='red', args=list(mean=theore_mean, sd=theore_var))+geom_vline(xintercept = theore_mean,color='red',size=1)
+g <- g+xlab('mean')+ylab('density')+ggtitle('distribution')
+g
+
+#conclusion
+#from the graph above, this exponential distribution is approximately normal
+
+
+
+
+```
+

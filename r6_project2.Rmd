@@ -1,0 +1,69 @@
+---
+title: "project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#analyze the ToothGrowth data in the R datasets package
+#1. Load the ToothGrowth data and perform some basic exploratory data analyses
+data("ToothGrowth")
+str(ToothGrowth)
+summary(ToothGrowth)
+table(ToothGrowth$supp,ToothGrowth$dose)
+
+#this dataframe contains 60 observations of 3 variables.Variables supp of type factors has two levels (VC ad OJ).
+# from the table command, there are three dose levels: 0.5,1,and 2 mg/day
+```
+
+```{r}
+#2.Provide a basic summary of the data.
+g <- ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) + geom_bar(stat="identity") +
+facet_grid(. ~ supp) +xlab("Dose(mg)") +ylab("Tooth length")
+g
+
+
+#3.Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. 
+
+#test the null hypothesis that mean length of odontoblasts for ascorbic acid (VC) and orange juice (OJ) does not differ significantly
+hypoth1 <- t.test(len ~ supp, data = ToothGrowth) 
+ hypoth1$conf.int
+ hypoth1$p.value
+ #alpha=0.05
+ 
+hypoth2<-t.test(len ~ supp, data = subset(ToothGrowth, dose == 0.5)) 
+hypoth2$conf.int
+hypoth2$p.value
+
+hypoth3<-t.test(len ~ supp, data = subset(ToothGrowth, dose == 1)) 
+hypoth3$conf.int
+hypoth3$p.value
+
+hypoth4<-t.test(len ~ supp, data = subset(ToothGrowth, dose == 2)) 
+hypoth4$conf.int
+hypoth4$p.value
+
+
+# 4. State your conclusions and the assumptions needed for your conclusions.
+#OJ ensures more tooth growth than VC for dosages 0.5 & 1.0. (bc p-value is smaller than alpha, so we reject the null hypothesis and conclude that a significant difference does exis)
+#OJ and VC gives the same amount of tooth growth for dose amount 2.0 mg/day. (bc p-value is larger than alpha, so we cannot conclude that a significant difference exists)
+#For the entire trail we cannot conclude OJ is more effective that VC for all dos amounts
+
+
+
+
+
+```
+
+
