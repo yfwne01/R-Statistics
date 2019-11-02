@@ -1,0 +1,75 @@
+---
+title: "project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#motor trend: automatic or manual tranmission car
+data("mtcars")
+names(mtcars)
+#there are 11 variables, and we are interested in the relationshion of mpg with other variables
+summary(mtcars)
+
+#analysis the correlations
+cor(mtcars$mpg,mtcars[,-1])
+
+#q1 Is an automatic or manual transmission better for MPG ?
+#from the correlations, cyl,disp,hp,wt and carb are negative numbers
+
+#conduct the t-test 
+t.test(mtcars$mpg~mtcars$am,conf.level=0.95)
+#since p-value is less than 0.05, we reject the null hypothesis, and manual one is better than the automatic one
+
+```
+
+```{r}
+
+#q2 Quantify the MPG difference between automatic and manual transmissions
+#multivariables regression
+
+multi <- lm(data=mtcars,mpg~.)
+multi
+
+#use the step function for the stepwise regression 
+final <- step(multi, direction = "both")
+summary(final)
+
+#conclusion
+#the multi R^2 is 0.8497, which means that bout 84.97% of the variance is explained by this model. manual is 2.93 mpg better than automatic transmission
+#on average, the manual transimission is better than the automatic transmission by 2.93 mpg. However, transmission type is not the only factor accounting for MPG, cylinders, horsepower, and weitght are the important factors in affecting the MPG.
+
+```
+
+```{r}
+# Appendix : supported plots
+#1
+pairs(mtcars)
+
+
+#2
+#boxplot: 0 means automatic ; 1 means manual
+boxplot(mpg~am, data = mtcars,
+        xlab = "Transmission",
+        ylab = "Miles per Gallon",
+        main = "MPG by Transmission Type")
+
+#3
+par(mfrow = c(2,2))
+plot(final)
+
+
+```
+
+
