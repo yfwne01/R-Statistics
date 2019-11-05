@@ -1,0 +1,68 @@
+---
+title: "r8"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#use different predictors and compare the accurancy
+#Load the Alzheimer’s data
+
+library(caret)
+library(gbm)
+library(AppliedPredictiveModeling)
+
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+
+#partition the training and test data
+inTrain = createDataPartition(adData$diagnosis, p = 0.75)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+set.seed(62433)
+#predict diagnosis using random forest
+rfmodel <- suppressMessages(train(diagnosis~., data=training, method="rf"))
+#predict diagnosis using boosted trees
+gbmmodel <- suppressMessages(train(diagnosis~., data=training, method="gbm"))
+#predict diagnosis using linear discriminant analysis 
+ldamodel <- suppressMessages(train(diagnosis~., data=training, method="lda"))
+
+#show results use testing data
+rfresult <- predict(rfmodel, testing)
+gbmresult <- predict(gbmmodel, testing)
+ldaresult <- predict(ldamodel, testing)
+
+#stack the predictions together using random forests (“rf”)
+combined.data <- data.frame(rfresult, gbmresult, ldaresult, diagnosis=testing$diagnosis)
+combined.model <- train(diagnosis~., data=combined.data, method="rf")
+
+#Get the resulting accuracy on the test set
+combined.result <- predict(combined.model, testing)
+confusionMatrix(testing$diagnosis, rfresult)$overall['Accuracy']
+
+confusionMatrix(testing$diagnosis, gbmresult)$overall['Accuracy']
+
+confusionMatrix(testing$diagnosis, ldaresult)$overall['Accuracy']
+confusionMatrix(testing$diagnosis, combined.result)$overall['Accuracy']
+
+```
+
+
+```{r}
+
+
+
+```
