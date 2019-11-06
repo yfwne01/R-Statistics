@@ -1,0 +1,95 @@
+---
+title: "project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#packages
+library(randomForest) #Random forest for classification and regression
+library(lattice)
+library(ggplot2)
+library(gbm)
+library(AppliedPredictiveModeling)
+library(caret) #partition the training and testing data
+library(rpart)# Regressive Partitioning and Regression trees
+library(rpart.plot)# Decision Tree plot
+
+#setting the overall seed for reproduceability
+set.seed(12345)
+
+#load the data and clean up
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+training <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+
+```
+
+
+
+```{r}
+#Cleaning the data
+
+trainData<- training[, colSums(is.na(training)) == 0]
+validData <- testing[, colSums(is.na(testing)) == 0]
+dim(trainData)
+dim(validData)
+
+trainData <- trainData[, -c(1:7)]
+validData <- validData[, -c(1:7)]
+dim(trainData)
+dim(validData)
+
+```
+
+```{r}
+#partition the data so that 75% of the training dataset into training and the remaining 25% to testing
+inTrain <- createDataPartition(y=trainData$classe, p=0.75, list=FALSE)
+TrainingSet <- trainData[inTrain, ]
+TestingSet <- trainData[-inTrain, ]
+
+dim(TrainingSet)
+dim(TestingSet)
+
+```
+
+```{r}
+#use decision tree for prediction
+modfit1 <-rpart(classe ~ ., data=TrainingSet, method="class")
+prediction1 <- predict(modfit1, TestingSet, type = "class")
+
+#plot the decision tree
+rpart.plot(modfit1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+
+confusionMatrix(TestingSet$classe, prediction1)
+
+
+```
+
+```{r}
+#use random forest for predition
+
+modfit2 <-randomForest(classe ~ ., data=TrainingSet, method="class")
+prediction2 <- predict(modfit2, TestingSet, type = "class")
+confusionMatrix(prediction2, TestingSet$classe)
+
+
+
+#Conclusion
+#For 75% training and 25% testing with the seed (12345)
+#Random Forest algorithm performed better than Decision Trees.Accuracy for Random Forest model was 0.995 (95% CI: (0.993, 0.997)) compared to 0.75 (95% CI: (0.739, 0.763)) for Decision Tree model.
+#The random Forest model is choosen. The accuracy of the model is 0.995. The expected out-of-sample error is estimated at 0.005, or 0.5%
+```
+
+
+
