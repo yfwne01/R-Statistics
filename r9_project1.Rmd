@@ -1,0 +1,52 @@
+---
+title: "project1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+#create the interactive map
+#load packages 
+library(dplyr)
+library(ggplot2)
+library(rjson)
+library(jsonlite)
+library(leaflet)
+library(RCurl)
+
+# Request and get the data from the colorado.gov SODA API 
+#get and clean the data
+base_url <- "https://data.colorado.gov/resource/j5pc-4t32.json?"
+full_url <- paste0(base_url, "station_status=Active",
+            "&county=BOULDER")
+water_data <- getURL(URLencode(full_url))
+
+# you can then pipe this
+water_data_df <- fromJSON(water_data) %>%
+  flatten(recursive = TRUE) # remove the nested data frame
+
+# turn columns to numeric and remove NA values
+water_data_df <- water_data_df %>%
+  mutate_at(vars(amount, location.latitude, location.longitude), funs(as.numeric)) %>%
+  filter(!is.na(location.latitude))
+
+#create leaflet map
+
+water_locations_map <- leaflet(water_data_df)
+water_locations_map <- addTiles(water_locations_map)
+water_locations_map <- addCircleMarkers(water_locations_map, lng = ~location.longitude,
+                        lat = ~location.latitude)
+water_locations_map
+
+```
+
