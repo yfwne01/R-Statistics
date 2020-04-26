@@ -9,3 +9,6 @@ R_8: pratical machine learning
 
 R_9: developing data products
 
+Stat_Mid2: Group Stat project in R
+
+Stat_Final: Individual Stat Project in R 
