@@ -1,0 +1,635 @@
+---
+title: "Stat Final Project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#loading the packages
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(boot)
+library("kableExtra")
+
+##read the csv file
+adult<- read.csv("adult.csv")
+
+dim(adult)
+head(adult)
+summary(adult)
+
+##Variable type and description summary
+variables_class <- as.data.frame(lapply(adult, class)) %>% 
+  .[1,] %>% 
+  gather(variable, R_class ,1:ncol(.)) %>% 
+  mutate(data_type = ifelse(R_class == "factor", "categorical", 
+                            ifelse(variable == "education_num","categorical","continuous")))
+variables_class
+
+
+
+```
+```{r}
+#Exploratory analytics
+#categorical Variable
+#Target variable income has two levels “<=50K” and “>50K” 
+n1 <- length(which(adult$income==">50K"))
+n1
+n2 <- length(which(adult$income=="<=50K"))
+n2
+# the pie chart of overall income
+counts <- c(7841,24720)
+lbls <- c("income > 50K ","income <= 50K")
+label <- paste(lbls,":",round(counts/sum(counts)*100), "%", sep="")
+pie(counts,labels= label, col=c("gold","darkgreen"),
+    main="Percentage of income")
+
+```
+
+```{r}
+#The density chart for continuous variables
+par(mfrow=c(1,2))
+
+hist(adult$age,freq=FALSE,xlab="Age", ylab = "Density")
+n1 <- filter(adult,age,income==">50K")
+n1
+hist(n1$age,freq=FALSE,xlab="Age",ylab="Density",main="By income >50K")
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(adult$hours.per.week,freq=FALSE,xlab="work hours per week", ylab = "Density" )
+abline(v=mean(adult$hours.per.week, col="yellow",lty="dashed"))
+
+n2 <- filter(adult,hours.per.week,income==">50K")
+n2
+hist(n2$hours.per.week,freq=FALSE,xlab="work hours per week",ylab="Density",main="By income >50K") 
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(adult$education.num,freq=FALSE,xlab="Education.Num", ylab = "Density")
+abline(v=mean(adult$education.num, col="yellow",lty="dashed"))
+
+n3 <- filter(adult,education.num,income==">50K")
+n3
+hist(n3$education.num,freq=FALSE,xlab="Education.Num",ylab="Density",main="By income >50K") 
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(adult$capital.gain,freq=FALSE,xlab="capital gain", ylab = "Density")
+
+n4 <- filter(adult,capital.gain,income==">50K")
+n4
+hist(n4$capital.gain,freq=FALSE,xlab="capital gain",ylab="Density",main="By income >50K") 
+
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(adult$capital.loss,freq=FALSE,xlab="capital loss", ylab = "Density")
+
+n5 <- filter(adult,capital.loss,income==">50K")
+n5
+hist(n5$capital.loss,freq=FALSE,xlab="capitall loss",ylab="Density",main="By income >50K") 
+```
+
+```{r}
+#The bar plots
+
+#sex vs income
+n1 <- length(which(adult$sex=="Female" & adult$income==">50K"))
+n1
+n2 <- length(which(adult$sex=="Female" & adult$income=="<=50K"))
+n2
+p1 <- n1/(n1+n2)
+p1
+
+n3 <- length(which(adult$sex=="Male" & adult$income==">50K"))
+n3
+n4 <- length(which(adult$sex=="Male" & adult$income=="<=50K"))
+n4
+p2 <- n3/(n3+n4)
+p2
+sub2 <- data.frame(Female=c(0.11,1-0.11),Male=c(0.306,1-0.306))
+sub2
+
+par(mfrow=c(1,2))
+barplot(sub2$Female,
+        xlab="F",
+        main="A barplot of Female Vs Income ",
+        col=c("blue","red"),
+       
+        )
+legend("topleft", legend =c("income > 50K","income <= 50K"), 
+       fill=c("blue","red"),
+        box.lty = 0, cex = 0.8)
+
+barplot(sub2$Male,
+        xlab="M",
+        main="A barplot of Male Vs Income",
+        col=c("blue","red"),
+       
+        )
+legend("topleft", legend =c("income > 50K","income <= 50K"), 
+       fill=c("blue","red"),
+        box.lty = 0, cex = 0.8)
+```
+
+
+
+```{r}
+#The boxplot
+#Work-class vs hours_per_week
+plot1 <- boxplot(hours.per.week~workclass, 
+     data=adult, 
+     main="Work-class vs hours_per_week ",
+     xlab = "workclass", 
+     ylab = "hours_per_week",
+     col="blue",
+     border="black"
+     )
+
+#The education vs Hour_per_week
+plot2 <- boxplot(hours.per.week~education, 
+     data=adult, 
+     main="education vs hours_per_week ",
+     xlab = "education", 
+     ylab = "hours_per_week",
+     col="red",
+     border="black"
+     )
+
+#The occupation vs hour_per_week
+plot3 <- boxplot(hours.per.week~occupation, 
+     data=adult, 
+     main="occupation vs hours_per_week ",
+     xlab = "occupation", 
+     ylab = "hours_per_week",
+     col="yellow",
+     border="black"
+     )
+```
+
+
+
+```{r}
+#correlation plot
+library(corrplot)
+num_subtable <- data.frame(adult$age,adult$fnlwgt,adult$education.num,adult$capital.gain,adult$capital.loss,adult$hours.per.week)
+rec <- cor(num_subtable)
+head(round(rec,2))
+corrplot(rec,method="color")
+
+
+```
+
+
+
+
+```{r}
+#One sample t-test
+#hour_perweek
+#According to the Bureau of Labor Statistics, the average American works 44 hours per week.
+
+##check the qqplot
+qqnorm(adult$hours.per.week)
+qqline(adult$hours.per.week)
+
+n1 <- length(adult$hours.per.week[!is.na(adult$hours.per.week)])
+n1
+x1 <- mean(adult$hours.per.week,na.rm=TRUE)
+x1
+s1 <- sd(adult$hours.per.week,na.rm=TRUE)
+s1
+t.test(adult$hours.per.week,mu=44,alternative="two.sided")
+
+## test statistic
+t <- (x1-44)/(s1/sqrt(n1))
+t
+
+##histogram of sample distribution
+h1 <-hist(adult$hours.per.week,
+    xlab="Hours per week",ylab="Density", freq=FALSE)
+abline(v=mean(adult$hours.per.week,na.rm=TRUE),col="red",lty="dashed")
+
+## plot the t-distribution with n-1 df
+set.seed(100)
+plot(seq(-60,60,0.01),dt(seq(-60,60,0.01),n1-1),xlab="t",ylab="distribution")
+##add the line for my test statistic
+abline(v=c(-t,t),col="red",lty="dashed")
+text(t,0.025,"t=-52.06",pos=4)
+text(-t,0.025,"t=52.06",pos=2)
+##add the line for the t-critical value associate with a=0.05 and n-1 degree of freedom
+abline(v=c(qt(0.025,n1-1),qt(0.975,n1-1)))
+
+
+```
+
+```{r}
+#One sample t-test
+#hour_perweek=44
+##bootstrap methods
+set.seed(100)
+num_sims <- 10000
+sim_results <- replicate(num_sims,NA)
+for(i in 1:num_sims){
+    sim_results[i] <- mean(sample(x=adult$hours.per.week,size=n1,replace=TRUE))
+    
+}
+hist(sim_results,freq=FALSE,main="Sampling Distribution of the sample mean",xlab="Averge hours per week",ylab="Density")
+lines(x=seq(40,41,0.01),dnorm(seq(40,41,0.01),mean=mean(adult$hours.per.week),sd=s1/sqrt(n1)))
+abline(v=x1,col="red",lty="dashed")
+
+```
+
+
+```{r}
+##shift the sample so that the null hypothesis is true
+mu_0 <- 44
+time_given_H0 <- adult$hours.per.week-mean(adult$hours.per.week)+mu_0
+mean(time_given_H0)
+num_sims <- 10000
+sim_results2 <- replicate(num_sims,NA)
+for(i in 1:num_sims){
+    sim_results2[i] <- mean(sample(x=time_given_H0,size=n1,replace=TRUE))
+    
+}
+
+hist(sim_results2,freq=FALSE,main="Sampling Distribution of the sample mean, Given null hypothesis is true",xlab="Averge hours per week",ylab="Density")
+lines(x=seq(43.5,44.5,0.005),dnorm(seq(43.5,44.5,0.005),mean=mean(sim_results2),sd=sd(sim_results2)))
+
+abline(v=mu_0,col="red",lty="dashed")
+abline(v=x1,col="black",lty="dashed")
+low_end <- mean(time_given_H0)+(mean(time_given_H0)-x1)
+abline(v=low_end,col="black",lty="dashed")
+
+```
+
+```{r}
+##the boostrap_pvalue
+count_of_more_lower <- sum(sim_results2 <= x1)
+count_of_more_upper <- sum(sim_results2 >=low_end)
+boostrap_pvalue <- (count_of_more_lower+count_of_more_upper)/num_sims
+boostrap_pvalue
+
+##the boostrap confidence interval
+boostrap_std <- sd(sim_results)
+c(x1-2*boostrap_std,x1+2*boostrap_std)
+c(quantile(sim_results,c(0.025,0.975)))
+```
+
+
+
+```{r}
+#One sample test of proportion
+## p=0.315
+
+data1 <- which(adult$race=='White')
+data2 <- which(adult$race=='White' & adult$income=='>50K')
+
+
+##sample size
+n1 <- length(which(adult$race=='White'))
+n1
+n2 <- length(which(adult$race=='White' & adult$income=='>50K'))
+n2
+#sample statistic
+p1 <- n2/n1
+p1
+binom.test(x=n2, n=n1,p=0.315,alternative="two.sided")
+
+## test statistic
+z <- (p1-0.315)/(sqrt((0.315*(1-0.315)/n1)))
+z
+## plot the test statistic distribution
+set.seed(100)
+x <- seq(-50,50,0.01)
+y <- dnorm(x,mean=0,sd=1)
+plot(x,y,type="l",lwd=2,col="black",xlab="x",ylab="distribution")
+abline(v=c(-z,z),col="red",lty="dashed")
+text(z,0.025,"z=-21.23",pos=4)
+text(-z,0.025,"z=21.23",pos=2)
+abline(v=c(qnorm(0.025),qnorm(0.975)))
+
+
+```
+
+```{r}
+#One sample test of proportion
+##p=0.315
+##bootstrap methods
+set.seed(100)
+whitepeople_more50K <- factor(rep(c("whitepeople_more50K","whitepeople_less50K"),c(7117,27816-7117)))
+table(whitepeople_more50K)
+
+whitepeople_more50K <- rep(c(1,0),c(7117,27816-7117))
+num_sims <- 10000
+results1 <- rep(NA,num_sims)
+for(i in 1:num_sims){
+    results1[i] <- mean(sample(x=whitepeople_more50K,size=n1,replace=TRUE))
+    
+}
+hist(results1,freq=FALSE,main="Sampling Distribution of the Sample Proportion",xlab="Proportion of The White people with more than 50K income",ylab="Density")
+lines(x=seq(0.225,0.2655,0.0005),dnorm(seq(0.225,0.2655,0.0005),mean=mean(results1),sd=sd(results1)))
+abline(v=p1,col="red",lty="dashed")
+```
+
+
+```{r}
+#shift the sample so that the null hypothesis is true
+##p=0.315
+set.seed(100)
+n3 <- 0.315*27816
+whitepeople_more50K <- rep(c(1,0),c(8762,27816-8762))
+num_sims <- 10000
+results2<- rep(NA,num_sims)
+for(i in 1:num_sims){
+    results2[i] <- mean(sample(x=whitepeople_more50K,size=n1,replace=TRUE))
+}
+
+hist(results2,freq=FALSE,main="Sampling Distribution of the Sample Proportion Under The H0 is true",xlab="Proportion of The White people with more than 50K income",ylab="Density")
+lines(x=seq(0.26,0.37,0.0005),dnorm(seq(0.26,0.37,0.0005),mean=mean(results2),sd=sd(results2)))
+abline(v=0.315,col="red",lty="dashed")
+```
+
+
+
+
+
+```{r}
+#the boostrap_pvalue
+count_lower <- sum(results2 <= p1)
+boostrap_pvalue <- count_lower/num_sims
+boostrap_pvalue
+
+##the boostrap confidence interval
+boostrap_std <- sd(results1)
+boostrap_std
+c(p1-2*boostrap_std,p1+2*boostrap_std)
+c(quantile(results1,c(0.025,0.975)))
+```
+
+
+
+
+
+```{r}
+##Two sample t-test for difference in means
+## the mean difference in capital loss
+
+## people own private business
+##check the qqplot
+
+data1 <- which(adult$workclass=="Private"& adult$capital.loss)
+qqnorm(data1)
+qqline(data1)
+
+n1 <- length(data1)
+n1
+x1<- mean(data1)
+x1
+s1 <- sd(data1)
+w1 <- s1^2/n1
+w1
+## people own local gov workclass
+##check the qqplot
+data2 <- which(adult$workclass=="Local-gov" & adult$capital.loss)
+qqnorm(data2)
+qqline(data2)
+
+n2 <- length(data2)
+n2
+x2 <- mean(data2)
+x2
+s2 <-sd(data2)
+w2 <- s2^2/n2
+w2
+## test statistic
+t <- (x1-x2)/(sqrt(w1+w2))
+t
+
+## Two-sample t-test
+hypoth1 <- t.test(data1,data2,data=adult,var.equal=TRUE) 
+hypoth1
+hypoth1$conf.int
+hypoth1$p.value
+
+
+## plot the t-distribution with n-1 df
+set.seed(100)
+plot(seq(-50,50,0.01),dt(seq(-50,50,0.01),n2-1),xlab="t",ylab="distribution")
+##add the line for my test statistic
+abline(v=c(-t,t),col="red",lty="dashed")
+text(t,0.025,"t=0.699",pos=4)
+text(-t,0.025,"t=-0.699",pos=2)
+##add the line for the t-critical value associate with a=0.05 and n-1 degree of freedom
+abline(v=c(qt(0.025,n1-1),qt(0.975,n2-1)))
+
+
+
+```
+
+```{r}
+##Two sample t-test for difference in means
+##bootstrap methods
+num_sims <- 10000
+results1 <- rep(NA,num_sims)
+for(i in 1:num_sims){
+    mean_private <- mean(sample(x=which(adult$workclass=="Private"& adult$capital.loss),size=n1,replace=TRUE))
+    mean_nonprivate <- mean(sample(x=which(adult$workclass=="Local-gov"& adult$capital.loss),size=n2,replace=TRUE))
+    results1[i] <- mean_private-mean_nonprivate
+}
+hist(results1,freq=FALSE,main="Sampling Distribution of the Sample Mean",xlab="Average Difference",ylab="Density")
+lines(x=seq(-150,150,0.01),dnorm(seq(-150,150,0.01),mean=mean(results1),sd=sd(results1)))
+abline(v=x1-x2,col="red",lty="dashed")
+
+##bootstrap CI
+c(quantile(results1,c(0.025,0.975)))
+
+```
+
+```{r}
+#shift the sample so that the null hypothesis is true
+transform(adult,workclass=sample(workclass))
+
+set.seed(100)
+num_sims <- 10000
+results2 <- rep(NA,num_sims)
+for(i in 1:num_sims){
+    shuffled_groups <- transform(adult,workclass=sample(workclass))
+    mean_private <- mean(which(shuffled_groups$workclass=="Private"& shuffled_groups$capital.loss))
+    mean_nonprivate <- mean(which(shuffled_groups$workclass=="Local-gov"& shuffled_groups$capital.loss))
+    results2[i] <- mean_private-mean_nonprivate
+}
+hist(results2,freq=FALSE, main="Dist. of the Diff in Sample Means Under Ho is true",xlab="Average Diff under Null",ylab="Density")
+lines(x=seq(-150,150,0.01),dnorm(seq(-150,150,0.01),mean=mean(results2),sd=sd(results2)))
+diff_in_sample_mean <- x1-x2
+abline(v=diff_in_sample_mean,col="red")
+abline(v=-diff_in_sample_mean,col="blue")
+
+##the boostrap_pvalue
+count_of_more_lower <-sum(results2 <= (diff_in_sample_mean))
+count_of_more_upper <- sum(results2 >= -diff_in_sample_mean)
+boostrap_pvalue <- (count_of_more_lower++count_of_more_upper)/num_sims
+boostrap_pvalue
+
+```
+
+
+
+
+```{r}
+##Two sample test for difference in proportions
+data1 <- which(adult$workclass=='Private')
+data2 <- which(adult$workclass=='Private' & adult$income=='>50K')
+
+data3 <- which(adult$workclass =='Local-gov')
+data4 <- which(adult$workclass =='Local-gov' & adult$income=='>50K')
+
+##people own private business
+n1 <-length(data1)
+n1
+x1 <- length(data2)
+x1
+p1 <- x1/n1
+p1
+w1 <- (p1*(1-p1))/n1
+
+##people without private business
+n2 <- length(data3)
+n2
+x2 <- length(data4)
+x2
+p2 <- x2/n2
+p2
+w2 <- (p2*(1-p2))/n2
+
+## two- sample test 
+res <- prop.test(x = c(x1, x2), n = c(n1, n2),alternative="two.sided")
+res
+
+## test statistic
+z <- (p1-p2)/(sqrt(w1+w2))
+z
+
+
+## plot the test statistic distribution
+set.seed(100)
+x <- seq(-20,20,0.01)
+y <- dnorm(x,mean=0,sd=1)
+plot(x,y,type="l",lwd=2,col="black",xlab="x",ylab="distribution")
+abline(v=c(-z,z),col="red",lty="dashed")
+text(-z,0.025,"z=7.36",pos=4)
+text(z,0.025,"z=-7.36",pos=2)
+abline(v=c(qnorm(0.025),qnorm(0.975)))
+
+```
+
+```{r}
+##Two sample test for difference in proportions
+##bootstrap methods
+set.seed(100)
+PS_more50K <-rep(c(1,0),c(4963,22696-4963))
+nonPS_more50K <-rep(c(1,0),c(617,2093-617))
+
+num_sims <- 10000
+results1 <- rep(NA,num_sims)
+for(i in 1:num_sims){
+  prop_hs<- mean(sample(PS_more50K),size=n1,replace=TRUE)
+  prop_nonhs <- mean(sample(nonPS_more50K),size=n2,replace=TRUE)
+  results1[i] <- prop_hs - prop_nonhs
+}
+results1
+hist(results1,freq=FALSE,main="Dist.of the Diff in Prop",xlab="Difference in Pro",ylab="Density")
+abline(v=p1-p2,col="red",lty="dashed")
+
+##the boostrap CI
+c(quantile(results1,c(0.025,0.975)))
+
+```
+
+```{r}
+#shift the sample so that the null hypothesis is true
+df_combined <- data.frame("work_class"=c(PS_more50K,nonPS_more50K),
+                          "class"=rep(c("PS_more50K","nonPS_more50K"),c(n1,n2))
+                          
+                          )
+summary(df_combined$class)
+mean(df_combined$work_class[df_combined$class=="PS_more50K"])==p1
+mean(df_combined$work_class[df_combined$class=="nonPS_more50K"])==p2
+
+```
+
+```{r}
+#shift the sample so that the null hypothesis is true
+set.seed(100)
+num_sims <- 10000
+results2 <- rep(NA,num_sims)
+for(i in 1:num_sims){
+    shuffled_groups <- transform(df_combined,class=sample(class))
+    prop_private <- mean(shuffled_groups$work_class[shuffled_groups$class=="PS_more50K"])
+    prop_nonprivate <- mean(shuffled_groups$work_class[shuffled_groups$class=="nonPS_more50K"])
+    
+    results2[i] <- prop_private - prop_nonprivate
+}
+hist(results2,freq=FALSE, main="Dist. of the Diff in Sample Prop Under Ho is true",xlab="Average Diff under Null",ylab="Density")
+lines(x=seq(-0.02,0.02,0.0005),dnorm(seq(-0.02,0.02,0.0005),mean=mean(results2),sd=sd(results2)))
+diff_in_sample_prop <- p1-p2
+diff_in_sample_prop
+abline(v=diff_in_sample_prop,col="red")
+abline(v=-diff_in_sample_prop,col="blue")
+
+##the boostrap_pvalue
+count_of_more_lower <-sum(results2 <= diff_in_sample_mean)
+count_of_more_upper <- sum(results2 >= (-diff_in_sample_mean))
+boostrap_pvalue <- (count_of_more_lower++count_of_more_upper)/num_sims
+boostrap_pvalue
+
+```
+
+```{r}
+#Chi-square goodness of fit
+#occupation
+table(adult$occupation)
+# parameter of interest
+prop.table(table(adult$occupation))
+n1 <-length(adult$occupation)
+n1
+hist(prop.table(table(adult$occupation)))
+#the null hypothesis 
+p0 <- 1/15
+p0
+#urder the null hypothesis, the expected count 
+a1 <- p0*n1
+a1
+#test statistics
+b1 <-sum(((table(adult$occupation)-a1)^2)/a1)
+b1
+#p-value
+pchisq(b1,df=14,lower.tail=FALSE)
+
+#No CI
+
+```
+
+
+
+
+
+
+
