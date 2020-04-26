@@ -1,5 +1,5 @@
 # Statistics In R
-R_5: reproducible research project 2
+R_5: reproducible research project
 
 R_6: Statistical inference project
 
