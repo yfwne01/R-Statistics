@@ -1,0 +1,268 @@
+---
+title: "Stat Mid2 Project"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#data processing
+#load the data; load the data in R 
+#Statistical Analysis 
+#data processing
+#load the data; load the data in R 
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+# xlsx files
+
+my_data2 <- read_excel("stat_data2.xlsx")
+head(my_data2)
+summary(my_data2)
+```
+
+```{r}
+#Exploratory Analysis
+# sample size
+n1 <- length(my_data2$PHappyScore[!is.na(my_data2$PHappyScore)])
+n1
+n2 <- length(my_data2$PHealthyScore[!is.na(my_data2$PHappyScore)])
+n2
+n3 <- length(my_data2$NHappyScore[!is.na(my_data2$NHappyScore)])
+n3
+n4 <- length(my_data2$NHealthyScore[!is.na(my_data2$NHealthyScore)])
+n4
+# the pie chart
+counts <- c(38,17)
+lbls <- c("Own pets","No pets")
+label <- paste(lbls,":",round(counts/sum(counts)*100), "%", sep="")
+pie(counts,labels= label, col=c("gold","darkgreen"),
+    main="Pet Ownership of The Sample")
+```
+
+```{r}
+#scatter plot
+par(mfrow=c(1,2))
+plot (my_data2$PAge,my_data2$PHappyScore,main="people who own pets", 
+      xlab="Age", ylab="Happy Score", col='red')
+abline(lm(my_data2$PHappyScore~my_data2$PAge ))
+
+plot(my_data2$PAge,my_data2$PHealthyScore, 
+     xlab="Age", ylab="Healthy Score", col='darkblue')
+abline(lm(my_data2$PHealthyScore~my_data2$PAge))
+
+par(mfrow=c(1,2))
+plot(my_data2$NAge,my_data2$NHappyScore,main=" people who do not own pets", 
+     xlab="Age", ylab="Happy Score", col='red')
+abline(lm(my_data2$NHappyScore~my_data2$NAge))
+
+plot(my_data2$NAge,my_data2$NHealthyScore, 
+     xlab="Age", ylab="Healthy Score", col='darkblue')
+abline(lm(my_data2$NHealthyScore~my_data2$NAge))
+
+```
+
+```{r}
+#barplot
+par(mfrow=c(1,2))
+
+counts1 <- table(my_data2$PGender)
+barplot(counts1,
+  main="People Who Own Pets",
+  col=c("red","darkblue"))
+
+counts2 <- table(my_data2$NGender)
+barplot(counts2,
+  main="People Who do not Own Pets",
+  ylim=c(0,20),
+  col=c("red","darkblue"))
+
+
+```
+
+```{r}
+#Box-Plot
+plot1 <- boxplot(Happy~PetOwner, 
+     data=my_data2, 
+     main="Bax plot of Happy Score ",
+     ylab = "Happy Scores",
+     col=c("gold","darkgreen"),
+     border="black"
+     )
+legend("topright", legend = c("0:No Pets", "1:Own a pet"),cex=0.8)
+
+plot2 <- boxplot(Healthy~PetOwner, 
+     data=my_data2, 
+     main="Bax plot of Healthy Score ",
+     ylab = "Healthy Scores",
+     col=c("gold","darkgreen"),
+     border="black"
+     )
+legend("topright", legend = c("0:No Pets", "1:Own a pet"),cex=0.8)
+
+```
+
+```{r}
+par(mfrow=c(1,2))
+# Happy scores Vs PetTime
+plot1 <- boxplot(Ptime~PHappyScore, 
+     data=my_data2, 
+     main="Happy scores Vs PetTime ",
+     xlab = "Happy Scores", 
+     ylab = "Pet Time",
+     col="blue",
+     border="black"
+     )
+# Healthy scores Vs PetTime
+plot2 <- boxplot(Ptime~PHealthyScore, 
+     data=my_data2, 
+     main="Healthy scores Vs PetTime ",
+     xlab = "Healthy Scores", 
+     ylab = "Pet Time",
+     col="red",
+     border="black"
+     )
+
+# Happy scores Vs MonthlyMoney
+plot3 <- boxplot(PMonthlyMoney~PHappyScore, 
+     data=my_data2, 
+     main="Happy scores Vs MonthlyMoney ",
+     xlab = "Happy Scores", 
+     ylab = "Monthly Money",
+     col="blue",
+     border="black"
+     )
+# Healthy scores Vs MonthlyMoney
+plot4 <- boxplot(PMonthlyMoney~PHealthyScore, 
+     data=my_data2, 
+     main="Healthy scores Vs MonthlyMoney ",
+     xlab = "Healthy Scores", 
+     ylab = "Monthly Money",
+     col="red",
+     border="black"
+     )
+```
+
+
+```{r}
+#sample means
+mean(my_data2$PHappyScore,na.rm=TRUE)
+mean(my_data2$PHealthyScore,na.rm=TRUE)
+
+mean(my_data2$NHappyScore, na.rm=TRUE)
+mean(my_data2$NHealthyScore,na.rm=TRUE)
+
+#sample st.dev
+sd(my_data2$PHappyScore,na.rm=TRUE)
+sd(my_data2$PHealthyScore,na.rm=TRUE)
+sd(my_data2$NHappyScore, na.rm=TRUE)
+sd(my_data2$NHealthyScore,na.rm=TRUE)
+
+```
+
+
+```{r}
+#check the population data is normally distributed
+#check the qqplot firstly
+qqnorm(my_data2$PHappyScore)
+qqline(my_data2$PHappyScore)
+
+qqnorm(my_data2$PHealthyScore)
+qqline(my_data2$PHealthyScore)
+
+qqnorm(my_data2$NHappyScore)
+qqline(my_data2$NHappyScore)
+
+qqnorm(my_data2$NHealthyScore)
+qqline(my_data2$NHealthyScore)
+
+#order the data from the smallest to largest
+#calculate the quantile 
+order1 <- order(my_data2$PHappyScore)
+quantile(order1,seq(0.01,0.99,0.1))
+
+order2 <- order(my_data2$PHealthyScore)
+quantile(order2,seq(0.01,0.99,0.1))
+
+order3 <- order(my_data2$NHappyScore)
+quantile(order2,seq(0.01,0.99,0.1))
+
+order4 <- order(my_data2$NHealthyScore)
+quantile(order2,seq(0.01,0.99,0.1))
+
+#Normal distrbution
+set.seed(100)
+x <- rnorm(100)
+qqnorm(x)
+qqline(x)
+quantile(x,seq(0.01,0.99,0.1))
+```
+
+
+```{r}
+#Two-sided t-test with 95% confidence interval (alpha=0.05)
+#Happy
+hypoth1 <- t.test(my_data2$PHappyScore,my_data2$NHappyScore,
+                  data=my_data2,var.equal=TRUE) 
+hypoth1
+hypoth1$conf.int
+hypoth1$p.value
+
+#Healthy
+hypoth2 <- t.test(my_data2$PHealthyScore,my_data2$NHealthyScore,
+                  data=my_data2,var.equal=TRUE) 
+hypoth2
+hypoth2$conf.int
+hypoth2$p.value
+```
+
+
+```{r}
+#Plot a histogram of the sampling distribution with normal distribution curve
+#people have pets
+par(mfrow=c(1,2))
+
+h1 <-hist(my_data2$PHappyScore,
+    xlab="Happy Score",xlim=c(0,15),ylab="Density", freq=FALSE)
+abline(v=mean(my_data2$PHappyScore,na.rm=TRUE),col="red",lty="dashed")
+curve(dnorm(x, mean=mean(my_data2$PHappyScore,na.rm=TRUE),
+            sd=sd(my_data2$PHappyScore,na.rm=TRUE)), add=TRUE, col="black")
+  
+
+h2 <-hist(my_data2$NHappyScore, 
+     xlab="Happy Score",xlim=c(0,15),ylab="Density", freq=FALSE)
+abline(v=mean(my_data2$NHappyScore,na.rm=TRUE),col="red",lty="dashed")
+curve(dnorm(x, mean=mean(my_data2$NHappyScore, na.rm=TRUE,)),
+      sd=sd(mean(my_data2$NHappyScore, na.rm=TRUE)), add=TRUE, col="black")
+
+#people do not have pets
+par(mfrow=c(1,2))
+
+h3 <- hist(my_data2$PHealthyScore,xlab="Healthy Score",xlim=c(0,15),
+           ylab="Density", freq=FALSE)
+abline(v=mean(my_data2$PHealthyScore,na.rm=TRUE),col="red",lty="dashed")
+curve(dnorm(x, mean=mean(my_data2$PHealthyScore,na.rm=TRUE),
+            sd=sd(my_data2$PHealthyScore,na.rm=TRUE)), add=TRUE, col="black")
+
+hist(my_data2$NHealthyScore,
+     xlab="Healthy Score",xlim=c(0,15),ylab="Density", freq=FALSE)
+abline(v=mean(my_data2$NHealthyScore,na.rm=TRUE),col="red",lty="dashed")
+curve(dnorm(x, mean=mean(my_data2$NHealthyScore,na.rm=TRUE),
+            sd=sd(my_data2$NHealthyScore,na.rm=TRUE)), add=TRUE, col="black")
+
+
+
+```
+
+
